@@ -59,6 +59,10 @@ function clearResults() {
   ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
 }
 
+function lastItem(items) {
+  return items[items.length - 1];
+}
+
 function parseCsv(text) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.length < 2) {
@@ -143,7 +147,7 @@ function simulateDataset(dataset, monthlyAmount, startMonth, endMonth) {
     throw new Error(`${dataset.name} は指定期間に月次データがありません。`);
   }
 
-  const finalPoint = series.at(-1);
+  const finalPoint = lastItem(series);
   return {
     name: dataset.name,
     invested: finalPoint.invested,
@@ -197,7 +201,12 @@ function renderChart(results) {
     return;
   }
 
-  const allValues = results.flatMap((result) => result.series.map((point) => point.value));
+  const allValues = [];
+  results.forEach((result) => {
+    result.series.forEach((point) => {
+      allValues.push(point.value);
+    });
+  });
   const maxValue = Math.max(...allValues);
   const minValue = 0;
   const left = 64;
@@ -239,7 +248,7 @@ function renderChart(results) {
 
     ctx.stroke();
 
-    const lastPoint = result.series.at(-1);
+    const lastPoint = lastItem(result.series);
     const labelX = right - 100;
     const labelY = bottom - ((lastPoint.value - minValue) / (maxValue - minValue || 1)) * (bottom - top);
     ctx.fillStyle = color;
@@ -271,9 +280,8 @@ function applyDefaultRange() {
     .map((dataset) => Array.from(dataset.monthMap.keys())[0])
     .sort()[0];
   const maxMonth = datasets
-    .map((dataset) => Array.from(dataset.monthMap.keys()).at(-1))
-    .sort()
-    .at(-1);
+    .map((dataset) => lastItem(Array.from(dataset.monthMap.keys())))
+    .sort()[datasets.length - 1];
 
   startDateInput.value = minMonth;
   endDateInput.value = maxMonth;
@@ -322,10 +330,9 @@ async function loadSelectedDataset() {
   setStatus(`${selected.name} を読み込みました。`);
 }
 
-function runSimulation() {
+function renderSimulation() {
   if (datasets.length === 0) {
-    setStatus("先に CSV データセットを読み込んでください。");
-    return;
+    throw new Error("先に CSV データセットを読み込んでください。");
   }
 
   const monthlyAmount = Number(monthlyAmountInput.value);
@@ -333,32 +340,45 @@ function runSimulation() {
   const endMonth = endDateInput.value.slice(0, 7);
 
   if (!monthlyAmount || !startMonth || !endMonth) {
-    setStatus("積立額と期間を指定してください。");
-    return;
+    throw new Error("積立額と期間を指定してください。");
   }
 
   if (startMonth > endMonth) {
-    setStatus("開始月は終了月以前にしてください。");
+    throw new Error("開始月は終了月以前にしてください。");
+  }
+
+  const results = datasets.map((dataset) =>
+    simulateDataset(dataset, monthlyAmount, startMonth, endMonth)
+  );
+  renderCards(results);
+  renderChart(results);
+  setStatus("シミュレーションを更新しました。");
+}
+
+async function ensureDatasetLoaded() {
+  if (datasets.length > 0) {
     return;
   }
 
+  await loadSelectedDataset();
+}
+
+async function runSimulation() {
   try {
-    const results = datasets.map((dataset) =>
-      simulateDataset(dataset, monthlyAmount, startMonth, endMonth)
-    );
-    renderCards(results);
-    renderChart(results);
-    setStatus("シミュレーションを更新しました。");
+    await ensureDatasetLoaded();
+    renderSimulation();
   } catch (error) {
     setStatus(error.message);
   }
 }
 
-runButton.addEventListener("click", runSimulation);
+runButton.addEventListener("click", () => {
+  runSimulation();
+});
 reloadButton.addEventListener("click", async () => {
   try {
     await loadSelectedDataset();
-    runSimulation();
+    renderSimulation();
   } catch (error) {
     setStatus(error.message);
   }
@@ -367,7 +387,7 @@ reloadButton.addEventListener("click", async () => {
 datasetSelect.addEventListener("change", async () => {
   try {
     await loadSelectedDataset();
-    runSimulation();
+    renderSimulation();
   } catch (error) {
     setStatus(error.message);
   }
@@ -379,7 +399,7 @@ async function initialize() {
     datasetHelpEl.textContent = `${catalog.datasets.length} 件のCSVを利用できます。`;
     if (catalog.datasets.length > 0) {
       await loadSelectedDataset();
-      runSimulation();
+      renderSimulation();
     } else {
       setStatus("CSV データセットが見つかりません。");
     }
