@@ -1,0 +1,35 @@
+{
+  "updatedAt": "2026-06-07",
+  "datasets": [
+    {
+      "id": "sp500",
+      "name": "S&P 500",
+      "file": "sp500.csv",
+      "meta": {
+        "source": "FRED",
+        "seriesId": "SP500",
+        "lastObservedDate": "2026-06-04"
+      }
+    },
+    {
+      "id": "nasdaq100",
+      "name": "NASDAQ-100",
+      "file": "nasdaq100.csv",
+      "meta": {
+        "source": "FRED",
+        "seriesId": "NASDAQ100",
+        "lastObservedDate": "2026-06-04"
+      }
+    },
+    {
+      "id": "sox",
+      "name": "SOX",
+      "file": "sox.csv",
+      "meta": {
+        "source": "FRED",
+        "seriesId": "NASDAQSOX",
+        "lastObservedDate": "2026-06-04"
+      }
+    }
+  ]
+}

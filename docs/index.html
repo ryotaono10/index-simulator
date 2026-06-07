@@ -12,34 +12,15 @@
         <p class="eyebrow">Index Simulator</p>
         <h1>指数ごとの毎月積立を、同じ条件で比較する。</h1>
         <p class="lead">
-          CSV の日次終値データを読み込むと、月末ベースで毎月積立した場合の現在評価額を比較できます。
+          あらかじめ保存してある CSV の日次終値データを使って、月末ベースで毎月積立した場合の現在評価額を比較できます。
         </p>
       </section>
 
       <section class="panel controls">
-        <div class="source-switch">
-          <span class="switch-label">読み込み元</span>
-          <label class="switch-option">
-            <input id="sourceCsv" type="radio" name="sourceMode" value="csv" checked />
-            <span>CSVアップロード</span>
-          </label>
-          <label class="switch-option">
-            <input id="sourceStatic" type="radio" name="sourceMode" value="static" />
-            <span>サンプル内蔵データ</span>
-          </label>
-        </div>
-
         <div class="field">
-          <label for="csvFiles">指数CSV</label>
-          <input id="csvFiles" type="file" accept=".csv" multiple />
-          <small id="csvHelp">`Date` と `Close` 系の列があれば読み込めます。</small>
-        </div>
-        <div class="field">
-          <label for="staticDataset">静的JSONデータセット</label>
-          <select id="staticDataset" disabled>
-            <option value="sp500-sample">S&P 500 サンプル</option>
-          </select>
-          <small id="staticHelp">`docs/assets/indices.json` から読み込みます。</small>
+          <label for="datasetSelect">指数データセット</label>
+          <select id="datasetSelect"></select>
+          <small id="datasetHelp">`docs/assets/csv/` に置いた CSV を読み込みます。</small>
         </div>
         <div class="grid">
           <div class="field">
@@ -57,10 +38,9 @@
         </div>
         <div class="actions">
           <button id="runButton" type="button">シミュレーション</button>
-          <button id="loadStaticButton" type="button" class="ghost">静的JSONを読み込む</button>
-          <button id="templateButton" type="button" class="ghost">CSVテンプレートを保存</button>
+          <button id="reloadButton" type="button" class="ghost">CSVを再読み込み</button>
         </div>
-        <p id="status" class="status">CSV を読み込んでください。</p>
+        <p id="status" class="status">CSV 一覧を読み込み中です。</p>
       </section>
 
       <section class="panel">
