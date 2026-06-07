@@ -398,7 +398,7 @@ async function ensureDatasetLoaded(forceReload = false) {
     return;
   }
 
-  await loadSelectedDataset({ preserveRange: forceReload });
+  await loadSelectedDataset({ preserveRange: forceReload && hasSelectedRange() });
 }
 
 async function runSimulation(forceReload = false) {
