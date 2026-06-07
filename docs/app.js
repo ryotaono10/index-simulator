@@ -1,4 +1,5 @@
 const datasetSelect = document.getElementById("datasetSelect");
+const initialAmountInput = document.getElementById("initialAmount");
 const monthlyAmountInput = document.getElementById("monthlyAmount");
 const startDateInput = document.getElementById("startDate");
 const endDateInput = document.getElementById("endDate");
@@ -122,16 +123,23 @@ function monthKeysBetween(startMonth, endMonth) {
   return keys;
 }
 
-function simulateDataset(dataset, monthlyAmount, startMonth, endMonth) {
+function simulateDataset(dataset, initialAmount, monthlyAmount, startMonth, endMonth) {
   const months = monthKeysBetween(startMonth, endMonth);
   let shares = 0;
   let invested = 0;
   const series = [];
+  let initialApplied = false;
 
   for (const month of months) {
     const point = dataset.monthMap.get(month);
     if (!point) {
       continue;
+    }
+
+    if (!initialApplied && initialAmount > 0) {
+      invested += initialAmount;
+      shares += initialAmount / point.close;
+      initialApplied = true;
     }
 
     invested += monthlyAmount;
@@ -335,12 +343,17 @@ function renderSimulation() {
     throw new Error("先に CSV データセットを読み込んでください。");
   }
 
+  const initialAmount = Number(initialAmountInput.value);
   const monthlyAmount = Number(monthlyAmountInput.value);
   const startMonth = startDateInput.value.slice(0, 7);
   const endMonth = endDateInput.value.slice(0, 7);
 
+  if (Number.isNaN(initialAmount) || initialAmount < 0) {
+    throw new Error("初期投資額は 0 円以上にしてください。");
+  }
+
   if (!monthlyAmount || !startMonth || !endMonth) {
-    throw new Error("積立額と期間を指定してください。");
+    throw new Error("初期投資額・積立額・期間を指定してください。");
   }
 
   if (startMonth > endMonth) {
@@ -348,24 +361,24 @@ function renderSimulation() {
   }
 
   const results = datasets.map((dataset) =>
-    simulateDataset(dataset, monthlyAmount, startMonth, endMonth)
+    simulateDataset(dataset, initialAmount, monthlyAmount, startMonth, endMonth)
   );
   renderCards(results);
   renderChart(results);
   setStatus("シミュレーションを更新しました。");
 }
 
-async function ensureDatasetLoaded() {
-  if (datasets.length > 0) {
+async function ensureDatasetLoaded(forceReload = false) {
+  if (!forceReload && datasets.length > 0) {
     return;
   }
 
   await loadSelectedDataset();
 }
 
-async function runSimulation() {
+async function runSimulation(forceReload = false) {
   try {
-    await ensureDatasetLoaded();
+    await ensureDatasetLoaded(forceReload);
     renderSimulation();
   } catch (error) {
     setStatus(error.message);
@@ -373,7 +386,7 @@ async function runSimulation() {
 }
 
 runButton.addEventListener("click", () => {
-  runSimulation();
+  runSimulation(true);
 });
 reloadButton.addEventListener("click", async () => {
   try {
