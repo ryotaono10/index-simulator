@@ -1,18 +1,32 @@
 const csvInput = document.getElementById("csvFiles");
+const sourceCsvInput = document.getElementById("sourceCsv");
+const sourceStaticInput = document.getElementById("sourceStatic");
+const staticDatasetSelect = document.getElementById("staticDataset");
 const monthlyAmountInput = document.getElementById("monthlyAmount");
 const startDateInput = document.getElementById("startDate");
 const endDateInput = document.getElementById("endDate");
 const runButton = document.getElementById("runButton");
+const loadStaticButton = document.getElementById("loadStaticButton");
 const templateButton = document.getElementById("templateButton");
 const statusEl = document.getElementById("status");
 const cardsEl = document.getElementById("summaryCards");
 const chartCanvas = document.getElementById("chart");
+const csvHelpEl = document.getElementById("csvHelp");
+const staticHelpEl = document.getElementById("staticHelp");
 
 const palette = ["#136f63", "#d95d39", "#315cfd", "#9f6f00", "#8d3dae", "#0081a7"];
 let datasets = [];
+let sourceMode = "csv";
+let staticCatalog = null;
 
 function setStatus(message) {
   statusEl.textContent = message;
+}
+
+function clearResults() {
+  cardsEl.innerHTML = "";
+  const ctx = chartCanvas.getContext("2d");
+  ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
 }
 
 function parseCsv(text) {
@@ -209,6 +223,15 @@ function deriveName(fileName) {
   return fileName.replace(/\.csv$/i, "");
 }
 
+function buildDataset(name, rows, meta = {}) {
+  return {
+    name,
+    rows,
+    monthMap: toMonthMap(rows),
+    meta,
+  };
+}
+
 function applyDefaultRange() {
   if (datasets.length === 0) {
     return;
@@ -232,20 +255,102 @@ async function loadFiles(files) {
   for (const file of files) {
     const text = await file.text();
     const rows = parseCsv(text);
-    datasets.push({
-      name: deriveName(file.name),
-      rows,
-      monthMap: toMonthMap(rows),
-    });
+    datasets.push(buildDataset(deriveName(file.name), rows, { source: "csv" }));
   }
 
   applyDefaultRange();
   setStatus(`${datasets.length} 件の指数データを読み込みました。`);
 }
 
+function parseStaticRows(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error("静的JSONに価格データがありません。");
+  }
+
+  const normalized = rows
+    .map((row) => ({
+      date: typeof row.date === "string" ? row.date : "",
+      close: Number(row.close),
+    }))
+    .filter((row) => row.date && !Number.isNaN(row.close));
+
+  if (normalized.length === 0) {
+    throw new Error("静的JSONの価格データ形式が正しくありません。");
+  }
+
+  normalized.sort((a, b) => a.date.localeCompare(b.date));
+  return normalized;
+}
+
+function populateStaticOptions(catalog) {
+  staticDatasetSelect.innerHTML = "";
+  for (const dataset of catalog.datasets) {
+    const option = document.createElement("option");
+    option.value = dataset.id;
+    option.textContent = dataset.name;
+    staticDatasetSelect.appendChild(option);
+  }
+}
+
+async function loadStaticCatalog() {
+  if (staticCatalog) {
+    return staticCatalog;
+  }
+
+  const response = await fetch("assets/indices.json", { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`静的JSONを取得できませんでした: HTTP ${response.status}`);
+  }
+
+  const catalog = await response.json();
+  if (!catalog || !Array.isArray(catalog.datasets)) {
+    throw new Error("静的JSONの形式が正しくありません。");
+  }
+
+  staticCatalog = catalog;
+  populateStaticOptions(catalog);
+  return catalog;
+}
+
+async function loadStaticDataset() {
+  const catalog = await loadStaticCatalog();
+  const datasetId = staticDatasetSelect.value;
+  const selected = catalog.datasets.find((dataset) => dataset.id === datasetId);
+
+  if (!selected) {
+    throw new Error("選択した静的データセットが見つかりません。");
+  }
+
+  const rows = parseStaticRows(selected.rows);
+  datasets = [buildDataset(selected.name, rows, selected.meta || { source: "static" })];
+  applyDefaultRange();
+  setStatus(`${selected.name} を静的JSONから読み込みました。`);
+}
+
+function updateSourceUi() {
+  const isCsv = sourceMode === "csv";
+  csvInput.disabled = !isCsv;
+  loadStaticButton.disabled = isCsv;
+  staticDatasetSelect.disabled = isCsv;
+  csvHelpEl.textContent = isCsv
+    ? "`Date` と `Close` 系の列があれば読み込めます。"
+    : "CSVモードに切り替えると選択できます。";
+  staticHelpEl.textContent = isCsv
+    ? "`docs/assets/indices.json` を使うときはサンプル内蔵データに切り替えてください。"
+    : "`docs/assets/indices.json` から読み込みます。";
+
+  clearResults();
+  datasets = [];
+  setStatus(
+    isCsv
+      ? "CSV を読み込んでください。"
+      : "静的JSONを読み込んでください。GitHub Pages 上では docs/assets/indices.json を参照します。"
+  );
+}
+
 function runSimulation() {
   if (datasets.length === 0) {
-    setStatus("先に CSV を読み込んでください。");
+    setStatus(sourceMode === "csv" ? "先に CSV を読み込んでください。" : "先に静的JSONを読み込んでください。");
     return;
   }
 
@@ -299,5 +404,27 @@ csvInput.addEventListener("change", async (event) => {
   }
 });
 
+sourceCsvInput.addEventListener("change", () => {
+  sourceMode = "csv";
+  updateSourceUi();
+});
+
+sourceStaticInput.addEventListener("change", () => {
+  sourceMode = "static";
+  updateSourceUi();
+});
+
+loadStaticButton.addEventListener("click", async () => {
+  try {
+    await loadStaticDataset();
+    runSimulation();
+  } catch (error) {
+    setStatus(
+      `${error.message} ブラウザで file:// 直開きしている場合は、GitHub Pages かローカルHTTP配信で確認してください。`
+    );
+  }
+});
+
 runButton.addEventListener("click", runSimulation);
 templateButton.addEventListener("click", downloadTemplate);
+updateSourceUi();

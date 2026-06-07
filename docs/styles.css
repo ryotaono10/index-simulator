@@ -80,6 +80,28 @@ h1 {
   margin-top: 18px;
 }
 
+.source-switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.switch-label {
+  font-weight: 700;
+}
+
+.switch-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--line);
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -104,12 +126,19 @@ button {
 
 input[type="number"],
 input[type="date"],
-input[type="file"] {
+input[type="file"],
+select {
   width: 100%;
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.76);
+}
+
+input:disabled,
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .actions {
