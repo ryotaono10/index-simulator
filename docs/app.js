@@ -305,6 +305,10 @@ function applyDefaultRange() {
   endDateInput.value = maxMonth;
 }
 
+function hasSelectedRange() {
+  return Boolean(startDateInput.value && endDateInput.value);
+}
+
 function populateDatasetOptions(catalog) {
   const existingValues = new Set(Array.from(datasetSelect.options).map((option) => option.value));
   for (const dataset of catalog.datasets) {
@@ -345,7 +349,7 @@ async function loadSelectedDataset(options = {}) {
 
   const rows = parseCsv(csvText);
   datasets = [buildDataset(selected.name, rows, selected.meta || { source: "bundled-csv" })];
-  if (!preserveRange) {
+  if (!preserveRange && !hasSelectedRange()) {
     applyDefaultRange();
   }
   setStatus(`${selected.name} を読み込みました。`);
@@ -411,7 +415,7 @@ runButton.addEventListener("click", () => {
 });
 reloadButton.addEventListener("click", async () => {
   try {
-    await loadSelectedDataset();
+    await loadSelectedDataset({ preserveRange: true });
     renderSimulation();
   } catch (error) {
     setStatus(error.message);
@@ -420,7 +424,7 @@ reloadButton.addEventListener("click", async () => {
 
 datasetSelect.addEventListener("change", async () => {
   try {
-    await loadSelectedDataset();
+    await loadSelectedDataset({ preserveRange: true });
     renderSimulation();
   } catch (error) {
     setStatus(error.message);
