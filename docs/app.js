@@ -8,6 +8,7 @@ const statusEl = document.getElementById("status");
 const cardsEl = document.getElementById("summaryCards");
 const chartCanvas = document.getElementById("chart");
 const datasetHelpEl = document.getElementById("datasetHelp");
+const bundledCsvData = window.BUNDLED_CSV_DATA || {};
 
 const palette = ["#136f63", "#d95d39", "#315cfd", "#9f6f00", "#8d3dae", "#0081a7"];
 const bundledCatalog = {
@@ -310,13 +311,12 @@ async function loadSelectedDataset() {
     throw new Error("選択したCSVデータセットが見つかりません。");
   }
 
-  const response = await fetch(`assets/csv/${selected.file}`, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`CSVを取得できませんでした: HTTP ${response.status}`);
+  const csvText = bundledCsvData[selected.file];
+  if (!csvText) {
+    throw new Error(`${selected.file} の同梱データが見つかりません。`);
   }
 
-  const text = await response.text();
-  const rows = parseCsv(text);
+  const rows = parseCsv(csvText);
   datasets = [buildDataset(selected.name, rows, selected.meta || { source: "bundled-csv" })];
   applyDefaultRange();
   setStatus(`${selected.name} を読み込みました。`);
