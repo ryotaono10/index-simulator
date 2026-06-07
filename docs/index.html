@@ -19,7 +19,11 @@
       <section class="panel controls">
         <div class="field">
           <label for="datasetSelect">指数データセット</label>
-          <select id="datasetSelect"></select>
+          <select id="datasetSelect">
+            <option value="sp500">S&amp;P 500</option>
+            <option value="nasdaq100">NASDAQ-100</option>
+            <option value="sox">SOX</option>
+          </select>
           <small id="datasetHelp">`docs/assets/csv/` に置いた CSV を読み込みます。</small>
         </div>
         <div class="grid">

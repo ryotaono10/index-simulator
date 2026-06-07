@@ -279,8 +279,12 @@ function applyDefaultRange() {
 }
 
 function populateDatasetOptions(catalog) {
-  datasetSelect.innerHTML = "";
+  const existingValues = new Set(Array.from(datasetSelect.options).map((option) => option.value));
   for (const dataset of catalog.datasets) {
+    if (existingValues.has(dataset.id)) {
+      continue;
+    }
+
     const option = document.createElement("option");
     option.value = dataset.id;
     option.textContent = dataset.name;
