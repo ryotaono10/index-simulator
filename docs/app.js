@@ -10,8 +10,43 @@ const chartCanvas = document.getElementById("chart");
 const datasetHelpEl = document.getElementById("datasetHelp");
 
 const palette = ["#136f63", "#d95d39", "#315cfd", "#9f6f00", "#8d3dae", "#0081a7"];
+const bundledCatalog = {
+  updatedAt: "2026-06-07",
+  datasets: [
+    {
+      id: "sp500",
+      name: "S&P 500",
+      file: "sp500.csv",
+      meta: {
+        source: "FRED",
+        seriesId: "SP500",
+        lastObservedDate: "2026-06-04",
+      },
+    },
+    {
+      id: "nasdaq100",
+      name: "NASDAQ-100",
+      file: "nasdaq100.csv",
+      meta: {
+        source: "FRED",
+        seriesId: "NASDAQ100",
+        lastObservedDate: "2026-06-04",
+      },
+    },
+    {
+      id: "sox",
+      name: "SOX",
+      file: "sox.csv",
+      meta: {
+        source: "FRED",
+        seriesId: "NASDAQSOX",
+        lastObservedDate: "2026-06-04",
+      },
+    },
+  ],
+};
 let datasets = [];
-let csvCatalog = null;
+let csvCatalog = bundledCatalog;
 
 function setStatus(message) {
   statusEl.textContent = message;
@@ -239,8 +274,8 @@ function applyDefaultRange() {
     .sort()
     .at(-1);
 
-  startDateInput.value = `${minMonth}-01`;
-  endDateInput.value = `${maxMonth}-01`;
+  startDateInput.value = minMonth;
+  endDateInput.value = maxMonth;
 }
 
 function populateDatasetOptions(catalog) {
@@ -254,23 +289,12 @@ function populateDatasetOptions(catalog) {
 }
 
 async function loadCsvCatalog() {
-  if (csvCatalog) {
-    return csvCatalog;
-  }
-
-  const response = await fetch("assets/csv/catalog.json", { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`CSVカタログを取得できませんでした: HTTP ${response.status}`);
-  }
-
-  const catalog = await response.json();
-  if (!catalog || !Array.isArray(catalog.datasets)) {
+  if (!csvCatalog || !Array.isArray(csvCatalog.datasets)) {
     throw new Error("CSVカタログの形式が正しくありません。");
   }
 
-  csvCatalog = catalog;
-  populateDatasetOptions(catalog);
-  return catalog;
+  populateDatasetOptions(csvCatalog);
+  return csvCatalog;
 }
 
 async function loadSelectedDataset() {
@@ -332,9 +356,7 @@ reloadButton.addEventListener("click", async () => {
     await loadSelectedDataset();
     runSimulation();
   } catch (error) {
-    setStatus(
-      `${error.message} ブラウザで file:// 直開きしている場合は、GitHub Pages かローカルHTTP配信で確認してください。`
-    );
+    setStatus(error.message);
   }
 });
 
@@ -358,9 +380,7 @@ async function initialize() {
       setStatus("CSV データセットが見つかりません。");
     }
   } catch (error) {
-    setStatus(
-      `${error.message} ブラウザで file:// 直開きしている場合は、GitHub Pages かローカルHTTP配信で確認してください。`
-    );
+    setStatus(error.message);
   }
 }
 
