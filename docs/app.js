@@ -129,6 +129,7 @@ function simulateDataset(dataset, initialAmount, monthlyAmount, startMonth, endM
   let invested = 0;
   const series = [];
   let initialApplied = false;
+  let contributionCount = 0;
 
   for (const month of months) {
     const point = dataset.monthMap.get(month);
@@ -142,8 +143,12 @@ function simulateDataset(dataset, initialAmount, monthlyAmount, startMonth, endM
       initialApplied = true;
     }
 
-    invested += monthlyAmount;
-    shares += monthlyAmount / point.close;
+    if (monthlyAmount > 0) {
+      invested += monthlyAmount;
+      shares += monthlyAmount / point.close;
+      contributionCount += 1;
+    }
+
     series.push({
       month,
       value: shares * point.close,
@@ -162,6 +167,9 @@ function simulateDataset(dataset, initialAmount, monthlyAmount, startMonth, endM
     finalValue: finalPoint.value,
     gain: finalPoint.value - finalPoint.invested,
     gainRate: ((finalPoint.value / finalPoint.invested) - 1) * 100,
+    initialAmount,
+    monthlyAmount,
+    contributionCount,
     startMonth: series[0].month,
     endMonth: finalPoint.month,
     months: series.length,
@@ -190,10 +198,12 @@ function renderCards(results) {
     const gainClass = result.gain >= 0 ? "gain-positive" : "gain-negative";
     card.innerHTML = `
       <h3>${result.name}</h3>
+      <p class="metric"><strong>初期投資</strong>${yen(result.initialAmount)}</p>
+      <p class="metric"><strong>毎月積立</strong>${yen(result.monthlyAmount)}</p>
       <p class="metric"><strong>投資元本</strong>${yen(result.invested)}</p>
       <p class="metric"><strong>評価額</strong>${yen(result.finalValue)}</p>
       <p class="metric ${gainClass}"><strong>損益</strong>${yen(result.gain)} (${percent(result.gainRate)})</p>
-      <p class="meta">${result.startMonth} から ${result.endMonth} まで ${result.months} 回積立</p>
+      <p class="meta">${result.startMonth} から ${result.endMonth} まで ${result.contributionCount} 回積立</p>
     `;
     cardsEl.appendChild(card);
   }
@@ -355,12 +365,20 @@ function renderSimulation() {
     throw new Error("初期投資額は 0 円以上にしてください。");
   }
 
-  if (!monthlyAmount || !startMonth || !endMonth) {
+  if (Number.isNaN(monthlyAmount) || monthlyAmount < 0) {
+    throw new Error("毎月の積立額は 0 円以上にしてください。");
+  }
+
+  if (!startMonth || !endMonth) {
     throw new Error("初期投資額・積立額・期間を指定してください。");
   }
 
   if (startMonth > endMonth) {
     throw new Error("開始月は終了月以前にしてください。");
+  }
+
+  if (initialAmount === 0 && monthlyAmount === 0) {
+    throw new Error("初期投資額か毎月の積立額のどちらかを 1 円以上にしてください。");
   }
 
   const results = datasets.map((dataset) =>
