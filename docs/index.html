@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Index積立シミュレーター</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">Index Simulator</p>
+        <h1>指数ごとの毎月積立を、同じ条件で比較する。</h1>
+        <p class="lead">
+          CSV の日次終値データを読み込むと、月末ベースで毎月積立した場合の現在評価額を比較できます。
+        </p>
+      </section>
+
+      <section class="panel controls">
+        <div class="field">
+          <label for="csvFiles">指数CSV</label>
+          <input id="csvFiles" type="file" accept=".csv" multiple />
+          <small>`Date` と `Close` 系の列があれば読み込めます。</small>
+        </div>
+        <div class="grid">
+          <div class="field">
+            <label for="monthlyAmount">毎月の積立額（円）</label>
+            <input id="monthlyAmount" type="number" min="1" step="1000" value="30000" />
+          </div>
+          <div class="field">
+            <label for="startDate">開始月</label>
+            <input id="startDate" type="date" />
+          </div>
+          <div class="field">
+            <label for="endDate">終了月</label>
+            <input id="endDate" type="date" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="runButton" type="button">シミュレーション</button>
+          <button id="templateButton" type="button" class="ghost">CSVテンプレートを保存</button>
+        </div>
+        <p id="status" class="status">CSV を読み込んでください。</p>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>比較結果</h2>
+          <p>各指数について、同じ積立条件で評価額を計算します。</p>
+        </div>
+        <div id="summaryCards" class="cards"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>推移グラフ</h2>
+          <p>月末時点の評価額推移です。</p>
+        </div>
+        <canvas id="chart" width="1200" height="520"></canvas>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
