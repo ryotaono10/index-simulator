@@ -318,7 +318,8 @@ async function loadCsvCatalog() {
   return csvCatalog;
 }
 
-async function loadSelectedDataset() {
+async function loadSelectedDataset(options = {}) {
+  const preserveRange = options.preserveRange === true;
   const catalog = await loadCsvCatalog();
   const datasetId = datasetSelect.value;
   const selected = catalog.datasets.find((dataset) => dataset.id === datasetId);
@@ -334,7 +335,9 @@ async function loadSelectedDataset() {
 
   const rows = parseCsv(csvText);
   datasets = [buildDataset(selected.name, rows, selected.meta || { source: "bundled-csv" })];
-  applyDefaultRange();
+  if (!preserveRange) {
+    applyDefaultRange();
+  }
   setStatus(`${selected.name} を読み込みました。`);
 }
 
@@ -373,7 +376,7 @@ async function ensureDatasetLoaded(forceReload = false) {
     return;
   }
 
-  await loadSelectedDataset();
+  await loadSelectedDataset({ preserveRange: forceReload });
 }
 
 async function runSimulation(forceReload = false) {
